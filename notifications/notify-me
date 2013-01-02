@@ -1,0 +1,88 @@
+#!/usr/bin/env ruby
+
+require "net/https"
+require "optparse"
+require "chronic"
+require 'psych'
+
+options = {}
+
+OptionParser.new{|opts|
+  opts.banner = "Usage: notify-me [options] -- [command]"
+
+  opts.on("-t", "--timed", "Include the time in the output"){|t| options[:timed] = t}
+  opts.on("--receive-time TIME", "Send this notification with a given time"){|at| options[:r_time] = at}
+  #opts.on("-p", "--paste", "Upload stdout and stderr to pastebin and include a link"){|p| options[:pastebin] = p}
+  opts.on("--title TITLE", "Set a title on the notification"){|ttl| options[:title] = ttl}
+  opts.on("-d DEVICE", "--device DEVICE", "Set default device to notify, default is blank"){|d| options[:device] = d}
+  opts.on("-c", "--command", "Treat the argument as a command and execute it"){|c| options[:command] = c}
+  opts.on("-m", "--message", "Treat the argument as text and send it"){|m| options[:message] = m}
+  opts.on("-h"){ puts opts; exit}
+}.parse!
+
+config_path = File.expand_path("~/.config.yml")
+
+unless File.exists?(config_path)
+  puts "Not such file ~/.config.yml"
+  exit
+end
+
+config = Psych::load_file(config_path)
+
+config = config.detect{|c| c.keys.include?("notifications")}
+
+if config.nil? || config["notifications"].nil?
+  puts "Could not find pushover notification settings"
+  exit
+end
+
+config = config["notifications"].detect{|c| c.keys.include?("pushover")}
+
+unless !config.nil? && config["application"] && config["user"]
+  puts "You must specify application and user keys"
+  exit
+end
+
+start = Time.now
+
+message_body = ""
+
+if options[:command]
+  # execute the command and collect its output
+  message_body = `#{ARGV.join(" ")}`
+else
+  message_body = ARGV.join(" ")
+end
+stop = Time.now
+
+duration = stop.to_i - start.to_i
+
+if options[:timed] && options[:command]
+  message_body = "Command: #{ARGV.join(" ")} took #{duration} seconds\n#{message_body}"
+end
+
+title = ""
+
+if options[:title]
+  title = options[:title]
+end
+
+if title.empty? && options[:command]
+  title = ARGV.join(" ")
+end
+
+url = URI.parse("https://api.pushover.net/1/messages.json")
+req = Net::HTTP::Post.new(url.path)
+req.set_form_data({
+  :user => config["user"],
+  :token=> config["application"],
+  :message => message_body,
+  :device => options[:device],
+  :title => title,
+  :timestamp => Chronic.parse(options[:r_time] || "now").to_i,
+})
+
+res = Net::HTTP.new(url.host, url.port)
+res.use_ssl = true
+res.verify_mode = OpenSSL::SSL::VERIFY_PEER
+res.start{|http| http.request(req) }

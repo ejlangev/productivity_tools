@@ -1,0 +1,46 @@
+#!/usr/bin/env ruby
+
+require "chronic"
+require "optparse"
+
+options = {}
+
+OptionParser.new{|opts|
+  opts.banner = "Usage: remind-me --at [TIME] --to [WHAT]"
+  opts.on("--at TIME", "Set a time to remind at") do |time|
+    options[:at] = time
+  end
+  opts.on("--to WHAT", "Reminder text") do |what|
+    options[:to] = what
+  end
+  opts.on("-l", "--list", "List pending tasks") do |l|
+    options[:list] = l
+  end
+  opts.on("-h"){ puts opts; exit }
+}.parse!
+
+if options[:list]
+  path = File.expand_path("~/.tasks")
+  if !File.exists?(path) || File.zero?(path)
+    puts "No pending reminders"
+  else
+    file = File.open(path, "r")
+    file.each do |line|
+      ln = line.split("\t\t")
+      puts("#{ln.first} - #{ln.last}")
+    end
+  end
+  exit
+end
+
+unless options[:at] && options[:to]
+  puts "Usage: remind-me --at [TIME] --to [WHAT]"
+  exit
+end
+
+# Make a text and timestamp line in the file
+options[:at] = Chronic.parse(options[:at])
+
+File.open(File.expand_path("~/.tasks"), "a") do |f|
+  f.write("#{options[:at]}\t\t#{options[:to]}\n")
+end

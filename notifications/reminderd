@@ -1,0 +1,40 @@
+#!/usr/bin/env ruby
+
+require "chronic"
+
+
+# Look through the file, find anything before now and
+# run notify-me to send a reminder, remove sent reminders from
+# the file
+
+path = File.expand_path("~/.tasks")
+
+unless File.exists?(path)
+  exit
+end
+
+# Otherwise we can continue, read the file and then
+# figure out what to send and send it
+lines = []
+to_send = []
+
+File.open(path, "r").each do |line|
+  lines << line.split("\t\t")
+end
+
+File.open(path, "w") do |f|
+  lines.each do |l|
+    # is it time to notify
+    if Time.now.to_i >= Chronic.parse(l.first).to_i
+      # collect the notification
+      to_send << l.last
+    else
+      f.write("#{ln.first}\t\t#{ln.last}")
+    end
+  end
+end
+
+# Now the file modification is done, send the notifications
+to_send.each do |msg|
+  `notify-me -m -- #{msg}`
+end
