@@ -12,10 +12,10 @@ parts.  The first is `notify-me` a script for sending yourself
 notifications through the Pushover API.  It depends on the
 following configuration options:
 
-- notifications:
-  - pushover:
-    application: YOUR-APP-KEY
-    user: YOUR-USER-KEY
+- notifications:  
+  - pushover:  
+    application: YOUR-APP-KEY  
+    user: YOUR-USER-KEY  
 
 The second part is a reminder system that uses the script `remind-me` to
 schedule notifications and the daemon `reminderd` to send them over
@@ -25,37 +25,7 @@ time.  `reminderd` expects `notify-me` to be in the PATH.  To set up
 1. Create a valid .plist file in $HOME/Library/LaunchAgents specifying
    the path to reminderd.  Call this file com.reminderd.plist.
 
-   An example file: 
-
-    <?xml version="1.0" encoding="UTF-8"?>
-    <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
-    "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-    <plist version="1.0">
-    <dict>
-      <key>Label</key>
-      <string>com.devdaily.crontabtest</string>
-
-      <key>ProgramArguments</key>
-      <array>
-        <string>/Users/al/bin/crontab-test.sh</string>
-      </array>
-
-      <key>Nice</key>
-      <integer>1</integer>
-
-      <key>StartInterval</key>
-      <integer>60</integer>
-
-      <key>RunAtLoad</key>
-      <true/>
-
-      <key>StandardErrorPath</key>
-      <string>/tmp/AlTest1.err</string>
-
-      <key>StandardOutPath</key>
-      <string>/tmp/AlTest1.out</string>
-  </dict>
-  </plist>
+   An example file [here](http://alvinalexander.com/mac-os-x/mac-osx-startup-crontab-launchd-jobs)
 
 2. Activate this by running `launchctl load com.reminderd.plist`
 
